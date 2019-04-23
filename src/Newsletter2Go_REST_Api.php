@@ -40,13 +40,21 @@ class Newsletter2Go_REST_Api
     	
     }
 
+    public function setToken($token) {
+        $this->access_token = $token;
+    }
+
+    public function token()
+    {
+        return $this->access_token;
+    }
+
     public function setSSLVerification($enable) {
         $this->sslVerification = $enable;
     }
 
-    private function getToken()
+    public function getToken()
     {
-
         $endpoint = "/oauth/v2/token";
 
         $data = array(
@@ -57,15 +65,10 @@ class Newsletter2Go_REST_Api
         );
 
         $response = $this->_curl('Basic ' . base64_encode($this->user_auth_key), $endpoint, $data, "POST");
-    
-        if (isset($response->error)) {
-            throw new \Exception("Authentication failed: " . $response->error);
-        }
 
         $this->access_token = $response->access_token;
         $this->refresh_token = $response->refresh_token;
-        
-
+        return $this->token();
     }
 
     /**
@@ -169,7 +172,7 @@ class Newsletter2Go_REST_Api
     
     /**
      * Update the HTML of an existing newsletter
-     * https://docs.newsletter2go.com/#76993cf1-63df-4bb9-89ee-393d2e8593f3
+     * https://docs.newsletter2go.com/#!/Newsletter/updateNewsletter
      * @param string $html
      * @return stdClass
      */
@@ -188,7 +191,7 @@ class Newsletter2Go_REST_Api
     
     /**
      * Update subject of an existing newsletter
-     * https://docs.newsletter2go.com/#76993cf1-63df-4bb9-89ee-393d2e8593f3
+     * https://docs.newsletter2go.com/#!/Newsletter/updateNewsletter
      * @param string $subject
      * @return stdClass
      */
@@ -208,7 +211,7 @@ class Newsletter2Go_REST_Api
     
     /**
      * Update name, subject or html of an existing newsletter
-     * https://docs.newsletter2go.com/#76993cf1-63df-4bb9-89ee-393d2e8593f3
+     * https://docs.newsletter2go.com/#!/Newsletter/updateNewsletter
      * @param string $newsletterId
      * @param string $name
      * @param string $subject
@@ -254,7 +257,7 @@ class Newsletter2Go_REST_Api
     
     /**
      * If you want to send transactional newsletters, you have to activate it first
-     * https://docs.newsletter2go.com/#76993cf1-63df-4bb9-89ee-393d2e8593f3
+     * https://docs.newsletter2go.com/#!/Newsletter/updateNewsletter
      * @param string $newsletterId
      * @param string $state can be 'active' or 'inactive'
      * @return stdClass
@@ -282,6 +285,7 @@ class Newsletter2Go_REST_Api
     	
     }
 
+
     /**
      * @param $endpoint string the endpoint to call (see docs.newsletter2go.com)
      * @param $data array tha data to submit. In case of POST and PATCH its submitted as the body of the request. In case of GET and PATCH it is used as GET-Params. See docs.newsletter2go.com for supported parameters.
@@ -297,16 +301,7 @@ class Newsletter2Go_REST_Api
         if (!isset($this->access_token) || strlen($this->access_token) == 0) {
             throw new \Exception("Authentication failed");
         }
-
-        $apiReponse = $this->_curl('Bearer ' . $this->access_token, $endpoint, $data, $type);
-
-        // check if token is expired
-        if (isset($apiReponse->error) && $apiReponse->error == "invalid_grant") {
-            $this->getToken();
-            $apiReponse = $this->_curl('Bearer ' . $this->access_token, $endpoint, $data, $type);
-        }
-
-        return $apiReponse;
+        return $this->_curl('Bearer ' . $this->access_token, $endpoint, $data, $type);
     }
 
     private function _curl($authorization, $endpoint, $data, $type = "GET")
@@ -320,17 +315,18 @@ class Newsletter2Go_REST_Api
 
         if ($type == static::METHOD_POST || $type == static::METHOD_PATCH) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
-  	    if ($type == static::METHOD_POST) {
-	    	curl_setopt($ch, CURLOPT_POST, true);
-	    }
+            $post = true;
         } else {
             if ($type == static::METHOD_GET || $type == static::METHOD_DELETE) {
+                $post = false;
                 $get_params = "?" . http_build_query($data);
             } else {
                 throw new \Exception("Invalid HTTP method: " . $type);
             }
         }
 
+
+        curl_setopt($ch, CURLOPT_POST, $post);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $type);
         curl_setopt($ch, CURLOPT_URL, static::BASE_URL . $endpoint . $get_params);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -351,13 +347,6 @@ class Newsletter2Go_REST_Api
         $response = curl_exec($ch);
         curl_close($ch);
 
-        $json_decoded = json_decode($response);
-
-	if(isset($json_decoded)){
-		return $json_decoded;
-	}
-	else{
-		return $response; // for pdf download
-	}
+        return json_decode($response);
     }
 }
