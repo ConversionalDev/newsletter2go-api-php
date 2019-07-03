@@ -225,6 +225,38 @@ class Newsletter2Go_REST_Api
         return $this->curl($endpoint, array("name" => $name, "subject" => $subject, "html" => $html), static::METHOD_PATCH);
     }
 
+
+    /**
+     * Attaches a file to a newsletter. Leave file_id empty to remove attachments.
+     * @param $newsletterId
+     * @param string $file_id
+     * @param string $file_name
+     * @param string $file_url
+     * @return \stdClass
+     * @throws \Exception
+     */
+    public function updateAttachments($newsletterId, $file_id = '', $file_name = '', $file_url = '')
+    {
+        $endpoint = "/newsletters/$newsletterId/variants";
+        $payload = array('attachments' => array());
+        if($file_id) {
+            $payload = array(
+                'attachments' => array(
+                    array(
+                        'id' => $file_id,
+                        'filename' => $file_name,
+                        'type' => 'url',
+                        'url' => $file_url
+                    )
+                )
+            );
+        }
+
+        return $this->curl($endpoint, $payload, static::METHOD_PATCH);
+    }
+
+
+
     /**
      * delete a newsletter
      * @param string $newsletterId
