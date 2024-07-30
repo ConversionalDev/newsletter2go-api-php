@@ -155,9 +155,9 @@ class Newsletter2Go_REST_Api
         $endpoint = "/lists/$listId/newsletters";
 
         $data = array(
-        		"type" => $type, 
-        		"name" => $name, 
-        		"subject" => $subject,        
+        		"type" => $type,
+        		"name" => $name,
+        		"subject" => $subject,
         		"header_from_email" => $header_from
         );
         if(isset($html)){
@@ -182,7 +182,7 @@ class Newsletter2Go_REST_Api
     	$endpoint = "/newsletters/$newsletterId";
     
     	$data = array(
-    			"html" => $html    			
+    			"html" => $html
     	);
 
     
@@ -285,7 +285,32 @@ class Newsletter2Go_REST_Api
 
         return $this->curl($endpoint, $data);
     }
-    
+ 
+    /**
+     * get list statistics
+     * $start and $end dates need to be in ISO format
+     * https://docs.newsletter2go.com/#!/List/getLists
+     * @return stdClass
+     */
+    public function getListStatistics($listId, $start, $end)
+    {
+
+        $endpoint = "/lists/$listId/newsletters";
+
+        // Check if start and end dates are in ISO format
+        if (!preg_match('/\d{4}-\d{2}-\d{2}/', $start) || !preg_match('/\d{4}-\d{2}-\d{2}/', $end)) {
+            throw new \Exception("Dates need to be in ISO format");
+        }
+
+        $filter = 'type=IN=("trigger","transaction","recurring","doi");statistic_mail_count=gt="0";statistic_last_sent=ge="' . $start . '";statistic_last_sent=le="' . $end . '"';
+
+        $data = array(
+            "_expand" => false,
+            "_filter" => $filter
+        );
+
+        return $this->curl($endpoint, $data);
+    }
     
     /**
      * If you want to send transactional newsletters, you have to activate it first
@@ -298,7 +323,7 @@ class Newsletter2Go_REST_Api
     	
     	$endpoint = "/newsletters/$newsletterId";
     	
-    	return $this->curl($endpoint, array("state" => $state), static::METHOD_PATCH);    	
+    	return $this->curl($endpoint, array("state" => $state), static::METHOD_PATCH);
     	
     }
     
@@ -311,7 +336,7 @@ class Newsletter2Go_REST_Api
      */
     public function sendNewsletter($newsletterId, $recipient_data){
     	
-    	$endpoint = "/newsletters/$newsletterId/send";   	
+    	$endpoint = "/newsletters/$newsletterId/send";
     	
     	return $this->curl($endpoint, $recipient_data, static::METHOD_POST);
     	
