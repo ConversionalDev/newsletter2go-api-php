@@ -132,6 +132,19 @@ class Newsletter2Go_REST_Api
     
     	return $this->curl($endpoint, $data);
     }
+
+
+    public function createRecipient($listId, $email)
+    {
+        $endpoint = "/recipients";
+
+        $data = array(
+            "list_id" => $listId,
+            "email" => $email,
+        );
+
+        return $this->curl($endpoint, $data, static::METHOD_POST);
+    }
     
     
 	/**
